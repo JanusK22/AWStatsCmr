@@ -1,0 +1,218 @@
+---
+title: "Data Visualisation : Cameroon Alphabetisation/Work"
+author: Janus Kuete
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r library}
+
+library(readr)
+library(tidyverse)
+library(data.table)
+library(ggrepel)
+library(ggthemr)
+library(maptools)
+library(raster)
+library(plyr)
+library(ggplot2)
+library(rgdal)
+library(dplyr)
+library(gganimate)
+library(gifski)
+
+```
+
+## Statical anlysis of cameroun
+
+http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#
+
+
+```{r Data Cleaning, echo = TRUE}
+# Read the Datas from the csv file and fitting
+
+ggthemr_reset()
+
+datas <- read_csv("CamSED_2014_en.csv")
+
+# remove the "#" and  remove Footnotes and groupby source to find the interesse and unusually , also bind Unit and indicator
+
+textscript <- includeText("s.Rmd")
+textserver <- includeText("StoryTelling/server.R")
+textui <- includeText("StoryTelling/ui.R")
+html <- includeHTML("StoryTelling/www/home.html")
+
+
+datas <- subset(as.tibble(lapply(datas, gsub, pattern = "#", replacement = "")), select = -Footnotes) %>%
+  mutate(Values = as.numeric(`Data Value`)) %>%
+  subset(select = -c(`Data Value`)) %>%
+  transform(indicator__unit = paste(Indicator, Unit, sep = "__")) %>%
+  subset(select = -c(Indicator, Unit)) %>%
+  group_by(Source)
+
+# seeing witch values are exploitable
+tail(names(sort(table(datas$Time.Period))), 25) # 2014
+
+tail(names(sort(table(datas$indicator__unit))), 25)
+
+tail(names(sort(table(datas$Source))), 25)
+
+# pivot Indicator
+
+ins_datas <- datas %>%
+  filter(grepl("CMR_INS_ECAM", Source)) %>%
+  subset(select = -Source)
+ins_datas <- ins_datas %>% pivot_wider(names_from = indicator__unit, values_from = Values)
+```
+
+## Employement Rate
+
+```{r Employement Rate}
+
+#Box config
+box_config <- tibble::tribble(
+  ~background, ~labelStatus,
+  "red", "warning",
+  "purple", "success",
+  "green", "primary",
+  "yellow", "danger",
+  "fuchsia", "info"
+)
+
+
+
+
+# Employment Rate for Women and Men
+
+ins_datas %>% 
+  filter(Time.Period == "2014") %>%
+  filter(Subgroup %in% c("Total", "Féminin", "Masculin")) %>%
+  ggplot(aes(Area, `Taux d'emploi des personnes agées de 15-64 ans__Pour cent`, color = Subgroup, group = Subgroup ,label = `Taux d'emploi des personnes agées de 15-64 ans__Pour cent`))+
+  geom_line(size = 1) +
+  geom_point(size = 1.5) +
+  ylab("Employement Rate ") +
+  theme(axis.text.x = element_text(
+          colour = 'black', angle = 90,
+          hjust = 0.5, vjust = 0.5),axis.title.x=element_blank()) 
+
+# Employment Rate for Village and City
+
+line <- function( liste)  {
+  ggthemr_reset()
+  ins_datas %>%
+  filter(Time.Period == "2014") %>%
+  filter(Subgroup %in% liste ) %>%
+  ggplot(aes(Area, `Taux d'emploi des personnes agées de 15-64 ans__Pour cent`, color = Subgroup, group = Subgroup, label = `Taux d'emploi des personnes agées de 15-64 ans__Pour cent`)) +
+  geom_line(size = 1) +
+  geom_point(size = 1.5, colour = "black") +
+  ggtitle(label = "Employement Rate ") +
+  labs(fill = "percentage rate") +
+  ylab("Employement Rate") +
+  theme(axis.text.x = element_text(
+    colour = "black", angle = 90,
+    hjust = 0.5, vjust = 0.5
+  ), axis.title.x = element_blank())
+}
+  
+
+
+
+
+```
+- Die Männer haben ungefähr 10 % Mehr Chance ein Job zu haben 
+- In Yaounde oder Douala ist es och größer 15 %
+- In West ist es gleich
+- Im Dorf gibt es mehr Chance zu arbeiten 
+- Ist Landflucht ein Myth ??
+
+
+## Primary School Rate
+
+```{r Primary School}
+
+# Primary School rate between women and men
+
+bar <- function(variable , theme){  
+  ggthemr(theme)
+  ins_datas %>%
+  filter(Time.Period == "2014") %>%
+  filter(Subgroup %in% variable) %>%
+  ggplot(aes(reorder(Area, `Taux net de scolarisation dans le primaire__Pour cent`), `Taux net de scolarisation dans le primaire__Pour cent`, fill = factor(Subgroup))) +
+  ggtitle(label = "Primary School rate") +
+  labs(fill = " Group") +
+  ylab("Primary Scolarisation Rate ") +
+  geom_col(position = "dodge", width = 0.5) +
+  theme(axis.text.x = element_text(
+    hjust = 0.5, vjust = 0.5
+  ), axis.text.y = element_text(size = 7), axis.title.y = element_blank()) +
+  coord_flip() }
+  
+
+
+```
+-Mädschen und Junge haben die Gleiche Chance zu arbeien 
+-Arme Regionen sind nicht favorisiert
+
+## Region Alphabetisation
+
+
+```{r Region Alphabetisation datacleaning}
+
+# Alphabetisation in Region
+
+Cameroon <- getData("GADM", country = "CMR", level = 1)
+
+Cameroo <- spTransform(Cameroon, CRS("+init=EPSG:3119"))
+Cameroon$NAME_1
+
+Cameroon_df <- fortify(Cameroo)
+
+# transform Ids to match with maps
+
+Cameroon_df$id <- ifelse(Cameroon_df$id == 1, 28, Cameroon_df$id) # Adamawa
+Cameroon_df$id <- ifelse(Cameroon_df$id == 2, 39, Cameroon_df$id) # Center
+Cameroon_df$id <- ifelse(Cameroon_df$id == 3, 29, Cameroon_df$id) # East
+Cameroon_df$id <- ifelse(Cameroon_df$id == 4, 30, Cameroon_df$id) # Far North
+Cameroon_df$id <- ifelse(Cameroon_df$id == 5, 38, Cameroon_df$id) # Littoral
+Cameroon_df$id <- ifelse(Cameroon_df$id == 6, 31, Cameroon_df$id) # North
+Cameroon_df$id <- ifelse(Cameroon_df$id == 7, 32, Cameroon_df$id) # North-West
+Cameroon_df$id <- ifelse(Cameroon_df$id == 8, 33, Cameroon_df$id) # West
+Cameroon_df$id <- ifelse(Cameroon_df$id == 9, 34, Cameroon_df$id) # South
+Cameroon_df$id <- ifelse(Cameroon_df$id == 10, 35, Cameroon_df$id) # South-west
+
+# just select the needed ID for mapping
+
+datastomap <- ins_datas %>%
+  filter(Area.ID %in% c(28, 29, 30, 31, 32, 33, 34, 35, 38, 39)) %>%
+  dplyr::rename("id" = "Area.ID")
+
+mapdatas <- join(datastomap, Cameroon_df, by = "id")
+```
+
+```{r Region Alphabetisation Plot}
+
+# removing unnecessary facets and plot(mapdatas)
+
+g <- function(var , theme){  ggthemr(theme)
+  mapdatas %>%
+  filter(Subgroup == c(var)) %>%
+  filter(Time.Period == "2014") %>%
+  ggplot() +
+  geom_polygon(aes(x = long, y = lat, group = group, fill = `Taux d'alphabétisation des 15 à 49 ans__Pour cent`)) +
+  ggtitle(label = "Alphabetisation in Regions") +
+  labs(fill = "percentage rate", x = "Longitude", y = "Latitude") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(
+    angle = 80,
+    hjust = 0.5, vjust = 0.5
+  )) +
+  scale_y_continuous(labels = function(y) format(y, scientific = TRUE)) +
+  scale_x_continuous(labels = function(x) format(x, scientific = TRUE))}
+  
+
+
+```
