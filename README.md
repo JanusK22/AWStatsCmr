@@ -14,15 +14,15 @@ Some Picture:
 This App is created by using some resources and libraries.
 
 *Datas*
-CamSED 2014 (http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#)
+CamSED 2014 : (http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#)
 
 *Library*
 
-Shiny
-shinydashboardPlus
-ggthemr
-fresh
-shinycssloaders
-plotly
-tidyverse
-library(maptools)
+Shiny 
+shinydashboardPlus 
+ggthemr 
+fresh 
+shinycssloaders 
+plotly 
+tidyverse 
+library(maptools) 
