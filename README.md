@@ -19,30 +19,10 @@ CamSED 2014 (http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#)
 *Library*
 
 Shiny
-
 shinydashboardPlus
-
 ggthemr
-
 fresh
-
 shinycssloaders
-
 plotly
-
 tidyverse
-
 library(maptools)
-
-Online tool
-
-Online Html editor
-
-Google Slide
-
-Zamzar
-
-External
-
-Soilprofil: Gabriel Holz
-
