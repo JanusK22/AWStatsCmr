@@ -13,10 +13,10 @@ Some Picture:
 
 This App is created by using some resources and libraries.
 
-*Datas*
-CamSED 2014 : (http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#)
+*Datas*:
+CamSED 2014 (http://www.dataforall.org/camsed/libraries/aspx/Home.aspx#)
 
-*Library* :
+*Library*:
 
 Shiny 
 shinydashboardPlus 
